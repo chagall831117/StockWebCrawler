@@ -24,6 +24,7 @@ namespace HelloWorld
         private float TimeCount = 0;
         public List<int> StockList = new List<int>();
         public int StockCount = 0;
+        public int NowPrize;
         Random ClsRoom = new Random();
         public Form1()
         {
@@ -45,8 +46,8 @@ namespace HelloWorld
                 }
             }
             chartArea.AxisX.Minimum = 0; //X軸數值從0開始
-            chartArea.AxisY.Minimum = 519;
-            chartArea.AxisY.Maximum = 526;
+            chartArea.AxisY.Minimum = 510;
+            chartArea.AxisY.Maximum = 540;
             chartArea.AxisX.ScaleView.Size = 10; //設定視窗範圍內一開始要顯示多少點
             chartArea.AxisX.Interval = 5;
             chartArea.AxisX.IntervalAutoMode = IntervalAutoMode.FixedCount;
@@ -56,9 +57,10 @@ namespace HelloWorld
         }
         public void RefreshChart(object sender, EventArgs e)
         {
-            if (StockCount == StockList.Count - 1) return;
+            GetPrizeNow();
+            label1.Text = "台積電現在股價為:" + NowPrize;
             //新增一個點至Series中
-            chart1.Series[0].Points.AddXY(TimeCount, StockList[StockCount]);
+            chart1.Series[0].Points.AddXY(TimeCount, NowPrize);
             if (TimeCount > 10)
             {
                 chart1.ChartAreas[0].AxisX.ScaleView.Position = TimeCount - 10;
@@ -73,18 +75,27 @@ namespace HelloWorld
         }
 
 
-        private void button2_Click(object sender, EventArgs e)
+        private void GetPrizeNow()
         {
             string ss = HttpGet("https://tw.stock.yahoo.com/quote/2330");
-            Console.WriteLine(ss);
+            Console.WriteLine("SS:" + ss);
             int FirstStringPosition = ss.IndexOf("加入自選股");
-            int SecondStringPosition = ss.IndexOf("連2漲");
-            string stringBetweenTwoStrings = ss.Substring(FirstStringPosition,
-    SecondStringPosition - FirstStringPosition + 3);
-            Console.WriteLine(stringBetweenTwoStrings);
+            Console.WriteLine("FirstStringPosition:" + FirstStringPosition);
+            string stringBetweenTwoStrings = ss.Substring(FirstStringPosition,300);
+            Console.WriteLine("stringBetweenTwoStrings:" + stringBetweenTwoStrings);
             int FirstMendPosition = stringBetweenTwoStrings.IndexOf("Mend") + 38;
-            string NowPrize = stringBetweenTwoStrings.Substring(FirstMendPosition, 3);
-            Console.WriteLine(Convert.ToInt32(NowPrize));
+            string nowprize = stringBetweenTwoStrings.Substring(FirstMendPosition, 3);
+            Console.WriteLine("NowPrize:"+Convert.ToInt32(nowprize));
+            NowPrize = Convert.ToInt32(nowprize);
+        }
+        private void button2_Click(object sender, EventArgs e)
+        {
+            //設定Timer
+            Timer clsTimer = new Timer();
+            clsTimer.Tick += new EventHandler(RefreshChart);
+            clsTimer.Interval = 60 * 1000;//間隔為1秒
+            clsTimer.Start();
+            /*
             int FirstLowString = ss.IndexOf("\"low\"") +6;
             int FirstOpenString = ss.IndexOf("\"open\"") - 1;
             string LowOpen = ss.Substring(FirstLowString, FirstOpenString - FirstLowString);
@@ -121,12 +132,8 @@ namespace HelloWorld
                 StockList.Add(Convert.ToInt32(LowOpen));
                 Console.WriteLine("[{0}]", string.Join(", ", StockList));
             }
-            label1.Text = "台積電現在股價為:"+NowPrize;
-            //設定Timer
-            Timer clsTimer = new Timer();
-            clsTimer.Tick += new EventHandler(RefreshChart);
-            clsTimer.Interval = 300;
-            clsTimer.Start();
+            */
+
         }
         public static string HttpGet(string url)
         {
